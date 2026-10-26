@@ -1,4 +1,4 @@
-import { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
@@ -9,7 +9,7 @@ const Login = () => {
     const roleFromUrl = queryParams.get('role') || 'Employee';
 
     const [activeRole, setActiveRole] = useState(roleFromUrl);
-    const [isSignup, setIsSignup] = useState(false);
+    const [isSignup, setIsSignup] = useState(false); // Toggle for Sign In / Sign Up
     
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
@@ -32,6 +32,7 @@ const Login = () => {
         try {
             let response;
             if (isSignup) {
+                // Apna live backend link yahan lagayen agar localhost hai
                 response = await axios.post('https://hcm-lite-hackhaton.vercel.app/api/auth/register', { name, email, password, role: activeRole });
             } else {
                 response = await axios.post('https://hcm-lite-hackhaton.vercel.app/api/auth/login', { email, password });
@@ -90,8 +91,12 @@ const Login = () => {
                         {activeRole === 'Admin' ? '🛡️ ' : activeRole === 'HR' ? '👥 ' : '💼 '} {activeRole} Portal
                     </div>
 
-                    <h2 style={{ color: '#0f172a', fontSize: '28px', fontWeight: '800', margin: '0 0 8px 0' }}>{isSignup ? `Create Account` : `Sign In`}</h2>
-                    <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '25px' }}>{isSignup ? 'Register official credentials.' : 'Enter work credentials.'}</p>
+                    <h2 style={{ color: '#0f172a', fontSize: '28px', fontWeight: '800', margin: '0 0 8px 0' }}>
+                        {isSignup ? `Create ${activeRole} Account` : `Sign In as ${activeRole}`}
+                    </h2>
+                    <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '25px' }}>
+                        {isSignup ? 'Register your official credentials.' : 'Enter your work credentials to access the portal.'}
+                    </p>
                     
                     {error && <div style={{ background: '#fef2f2', color: '#dc2626', padding: '12px', borderRadius: '8px', marginBottom: '20px', fontSize: '13px', fontWeight: '600' }}>{error}</div>}
                     
@@ -104,24 +109,21 @@ const Login = () => {
                         </div>
                         
                         <button type="submit" disabled={loading} style={{ padding: '14px', background: '#2563eb', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', cursor: loading ? 'not-allowed' : 'pointer' }}>
-                            {loading ? 'Processing...' : (isSignup ? 'Register' : 'Sign In')}
+                            {loading ? 'Processing...' : (isSignup ? 'Create Account' : 'Sign In')}
                         </button>
                     </form>
 
-                    <div style={{ marginTop: '15px', textAlign: 'center', fontSize: '13px' }}>
-                        {activeRole === 'Employee' ? (
-                            <button type="button" onClick={() => { setIsSignup(!isSignup); setError(''); }} style={{ background: 'none', border: 'none', color: '#2563eb', fontWeight: '700', cursor: 'pointer' }}>
-                                {isSignup ? 'Login instead' : 'Create an account'}
-                            </button>
-                        ) : (
-                            <span style={{ color: '#64748b' }}>HR and Admin accounts are provisioned by an administrator.</span>
-                        )}
+                    <div style={{ marginTop: '15px', textAlign: 'center', fontSize: '14px', color: '#64748b' }}>
+                        {isSignup ? "Already have an account? " : "Don't have an account? "}
+                        <button type="button" onClick={() => { setIsSignup(!isSignup); setError(''); }} style={{ background: 'none', border: 'none', color: '#2563eb', fontWeight: '700', cursor: 'pointer' }}>
+                            {isSignup ? 'Sign in instead' : 'Create an account'}
+                        </button>
                     </div>
 
                     <div style={{ display: 'flex', gap: '10px', marginTop: '30px' }}>
                         {allRoles.filter(role => role !== activeRole).map(role => (
                             <button key={role} type="button" onClick={() => { setActiveRole(role); setError(''); setIsSignup(false); }} style={{ flex: 1, padding: '10px', border: '1px solid #cbd5e1', borderRadius: '8px', background: 'transparent', cursor: 'pointer', fontSize: '12px', fontWeight: '600' }}>
-                                {role} Portal
+                                Switch to {role}
                             </button>
                         ))}
                     </div>

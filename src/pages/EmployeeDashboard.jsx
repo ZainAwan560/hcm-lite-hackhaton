@@ -1,5 +1,4 @@
-/* eslint-disable react-hooks/set-state-in-effect */
-import { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 
@@ -9,18 +8,20 @@ const EmployeeDashboard = () => {
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(true);
-    
-    // Mobile menu toggle
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     const [attendanceLogs, setAttendanceLogs] = useState([]);
     const [leaveRequests, setLeaveRequests] = useState([]);
     const [payrolls, setPayrolls] = useState([]);
-    
     const [todayStatus, setTodayStatus] = useState('Not Checked In');
     const [checkInTime, setCheckInTime] = useState('--:--');
     const [checkOutTime, setCheckOutTime] = useState('--:--');
     const [newLeave, setNewLeave] = useState({ type: 'Annual', startDate: '', endDate: '', reason: '' });
+
+    // Yahan API base URL ko apne hisab se update rakhein
+    const API_BASE_URL = 'https://hcm-lite-hackhaton.vercel.app'; 
+
+    useEffect(() => { fetchMyData(); }, []);
 
     const fetchMyData = async () => {
         setLoading(true);
@@ -29,16 +30,14 @@ const EmployeeDashboard = () => {
             const headers = { Authorization: `Bearer ${token}` };
 
             const [attRes, leavesRes, payrollsRes] = await Promise.allSettled([
-                axios.get('https://hcm-lite-hackhaton.vercel.app/api/attendance/me', { headers }),
-                axios.get('https://hcm-lite-hackhaton.vercel.app/api/leaves/me', { headers }),
-                axios.get('https://hcm-lite-hackhaton.vercel.app/api/payroll/me', { headers })
+                axios.get(`${API_BASE_URL}/api/attendance/me`, { headers }),
+                axios.get(`${API_BASE_URL}/api/leaves/me`, { headers }),
+                axios.get(`${API_BASE_URL}/api/payroll/me`, { headers })
             ]);
 
             if (attRes.status === 'fulfilled') {
                 const logs = attRes.value.data || [];
                 setAttendanceLogs(logs);
-                
-                // Exactly matching the backend date format
                 const td = new Date();
                 const today = `${td.getFullYear()}-${String(td.getMonth() + 1).padStart(2, '0')}-${String(td.getDate()).padStart(2, '0')}`;
                 
@@ -59,14 +58,11 @@ const EmployeeDashboard = () => {
                 setPayrolls(approvedSlips);
             }
         } catch (err) {
-            console.error(err);
             setError("Live server se connect hone mein masla aa raha hai.");
         } finally {
             setLoading(false);
         }
     };
-
-    useEffect(() => { fetchMyData(); }, []);
 
     const showMsg = (msg, isError = false) => {
         if (isError) setError(msg);
@@ -77,9 +73,9 @@ const EmployeeDashboard = () => {
     const handleAttendance = async (action) => {
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.post(`https://hcm-lite-hackhaton.vercel.app/api/attendance/${action}`, {}, { headers: { Authorization: `Bearer ${token}` } });
+            const res = await axios.post(`${API_BASE_URL}/api/attendance/${action}`, {}, { headers: { Authorization: `Bearer ${token}` } });
             showMsg(res.data.message);
-            fetchMyData(); // Live refresh
+            fetchMyData();
         } catch (err) {
             showMsg(err.response?.data?.message || `Error: Attendance mark nahi ho saki.`, true);
         }
@@ -89,12 +85,11 @@ const EmployeeDashboard = () => {
         e.preventDefault();
         try {
             const token = localStorage.getItem('token');
-            await axios.post('https://hcm-lite-hackhaton.vercel.app/api/leaves/apply', newLeave, { headers: { Authorization: `Bearer ${token}` } });
+            await axios.post(`${API_BASE_URL}/api/leaves/apply`, newLeave, { headers: { Authorization: `Bearer ${token}` } });
             showMsg('Leave application HR ko bhej di gayi hai.');
             setNewLeave({ type: 'Annual', startDate: '', endDate: '', reason: '' });
             fetchMyData();
         } catch (err) {
-            console.error(err);
             showMsg('Leave submit karne mein error aaya.', true);
         }
     };
@@ -102,7 +97,6 @@ const EmployeeDashboard = () => {
     const handleLogout = () => { localStorage.clear(); window.location.href = '/'; };
     const printPayslip = () => { window.print(); };
 
-    // Function to handle tab click (closes mobile menu automatically)
     const handleMenuClick = (tabId) => {
         setActiveTab(tabId);
         setMobileMenuOpen(false);
@@ -122,28 +116,21 @@ const EmployeeDashboard = () => {
                     .grid-2 { grid-template-columns: 1fr 1fr; }
                     .grid-4 { grid-template-columns: repeat(4, 1fr); }
                     .mobile-top-bar { display: none; }
-                    .mobile-dropdown { display: none; }
-                    .desktop-menu-items { display: flex; flex-direction: column; }
                     
                     @media (max-width: 992px) { .grid-4 { grid-template-columns: repeat(2, 1fr); } .grid-2 { grid-template-columns: 1fr; } }
                     @media (max-width: 768px) {
                         .dashboard-layout { flex-direction: column; }
-                        .sidebar { display: none; } /* Hide default sidebar on mobile */
+                        .sidebar { display: none; } 
                         .mobile-top-bar { display: flex; justify-content: space-between; align-items: center; background: #020617; padding: 15px 20px; color: white; position: sticky; top: 0; z-index: 50; }
-                        
-                        /* Mobile Dropdown Menu */
                         .mobile-dropdown { display: ${mobileMenuOpen ? 'flex' : 'none'}; flex-direction: column; background: #0f172a; position: fixed; top: 60px; left: 0; right: 0; z-index: 40; border-bottom: 1px solid #1e293b; }
                         .mobile-dropdown button { padding: 15px 20px; color: #94a3b8; border: none; border-bottom: 1px solid #1e293b; background: transparent; text-align: left; font-size: 16px; font-weight: 500; }
                         .mobile-dropdown button.active { color: #38bdf8; background: #1e293b; border-left: 4px solid #38bdf8; }
-                        
                         .header-area { flex-direction: column; align-items: flex-start; gap: 10px; }
-                        .grid-4 { grid-template-columns: 1fr; }
                         .dashboard-padding { padding: 15px !important; }
                     }
                 `}
             </style>
 
-            {/* Mobile Top Navbar (Only visible on mobile) */}
             <div className="mobile-top-bar">
                 <h2 style={{ margin: 0, fontSize: '20px', fontWeight: '800' }}><span style={{ color: '#38bdf8' }}>HCM</span> Portal</h2>
                 <div onClick={() => setMobileMenuOpen(!mobileMenuOpen)} style={{ cursor: 'pointer', padding: '5px' }}>
@@ -151,7 +138,6 @@ const EmployeeDashboard = () => {
                 </div>
             </div>
 
-            {/* Mobile Dropdown Menu Items */}
             <div className="mobile-dropdown">
                 <button className={activeTab === 'overview' ? 'active' : ''} onClick={() => handleMenuClick('overview')}>My Profile</button>
                 <button className={activeTab === 'attendance' ? 'active' : ''} onClick={() => handleMenuClick('attendance')}>Attendance</button>
@@ -160,13 +146,12 @@ const EmployeeDashboard = () => {
                 <button onClick={handleLogout} style={{ color: '#ef4444' }}>Secure Logout</button>
             </div>
 
-            {/* Desktop Sidebar */}
             <div className="sidebar">
                 <div style={{ flexDirection: 'column' }}>
                     <div style={{ padding: '20px', borderBottom: '1px solid #1e293b', background: '#0f172a', textAlign: 'center' }}>
                         <h2 style={{ color: '#ffffff', margin: 0, fontSize: '20px', fontWeight: '800' }}><span style={{ color: '#38bdf8' }}>HCM</span> Portal</h2>
                     </div>
-                    <div className="desktop-menu-items">
+                    <div>
                         <button className="sidebar-btn" onClick={() => setActiveTab('overview')} style={{ background: activeTab === 'overview' ? '#1e293b' : 'transparent', color: activeTab === 'overview' ? '#38bdf8' : '#94a3b8', borderLeft: activeTab === 'overview' ? '4px solid #38bdf8' : '4px solid transparent' }}>My Profile</button>
                         <button className="sidebar-btn" onClick={() => setActiveTab('attendance')} style={{ background: activeTab === 'attendance' ? '#1e293b' : 'transparent', color: activeTab === 'attendance' ? '#38bdf8' : '#94a3b8', borderLeft: activeTab === 'attendance' ? '4px solid #38bdf8' : '4px solid transparent' }}>Attendance</button>
                         <button className="sidebar-btn" onClick={() => setActiveTab('leaves')} style={{ background: activeTab === 'leaves' ? '#1e293b' : 'transparent', color: activeTab === 'leaves' ? '#38bdf8' : '#94a3b8', borderLeft: activeTab === 'leaves' ? '4px solid #38bdf8' : '4px solid transparent' }}>Leave Management</button>
@@ -182,7 +167,7 @@ const EmployeeDashboard = () => {
                 <div className="header-area dashboard-padding" style={{ background: 'white', padding: '20px 45px', borderBottom: '1px solid #e2e8f0' }}>
                     <div>
                         <h1 style={{ color: '#0f172a', margin: 0, fontSize: '24px', fontWeight: '700' }}>
-                            {activeTab === 'overview' && 'Employee Dashboard'}
+                            {activeTab === 'overview' && 'My Detailed Profile'}
                             {activeTab === 'attendance' && 'Time & Attendance'}
                             {activeTab === 'leaves' && 'Leave Applications'}
                             {activeTab === 'payroll' && 'Salary Slips'}
@@ -199,19 +184,63 @@ const EmployeeDashboard = () => {
                         <div style={{ textAlign: 'center', padding: '50px', color: '#64748b' }}>Loading data...</div>
                     ) : (
                         <>
+                            {/* DETAILED PROFILE SECTION */}
                             {activeTab === 'overview' && (
-                                <div className="table-container" style={{ overflow: 'hidden' }}>
-                                    <div style={{ height: '140px', background: 'linear-gradient(90deg, #1e293b 0%, #334155 100%)', position: 'relative' }}>
-                                        <div style={{ position: 'absolute', bottom: '-40px', left: '30px', width: '90px', height: '90px', borderRadius: '50%', background: 'white', padding: '4px' }}>
-                                            <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: 'linear-gradient(135deg, #0ea5e9, #2563eb)', color: 'white', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '32px', fontWeight: 'bold' }}>
+                                <div className="table-container" style={{ overflow: 'hidden', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
+                                    <div style={{ height: '160px', background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)', position: 'relative' }}>
+                                        <div style={{ position: 'absolute', bottom: '-50px', left: '40px', width: '110px', height: '110px', borderRadius: '50%', background: 'white', padding: '5px', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>
+                                            <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: 'linear-gradient(135deg, #3b82f6, #2563eb)', color: 'white', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '38px', fontWeight: 'bold' }}>
                                                 {user?.name?.charAt(0) || 'E'}
                                             </div>
                                         </div>
                                     </div>
-                                    <div style={{ padding: '60px 30px 30px 30px', borderBottom: '1px solid #e2e8f0' }}>
-                                        <h2 style={{ margin: '0 0 5px 0', color: '#0f172a', fontSize: '24px', fontWeight: '800' }}>{user?.name}</h2>
-                                        <p style={{ margin: 0, color: '#3b82f6', fontWeight: '600' }}>{user?.email}</p>
-                                        <span style={{ display: 'inline-block', marginTop: '15px', background: '#ecfdf5', color: '#059669', padding: '6px 15px', borderRadius: '8px', fontWeight: '700', fontSize: '13px' }}>Active Employee</span>
+                                    
+                                    <div style={{ padding: '70px 40px 40px 40px', background: 'white' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '20px' }}>
+                                            <div>
+                                                <h2 style={{ margin: '0 0 8px 0', color: '#0f172a', fontSize: '28px', fontWeight: '800' }}>{user?.name}</h2>
+                                                <p style={{ margin: '0 0 15px 0', color: '#64748b', fontSize: '15px', fontWeight: '500' }}>
+                                                    {user?.designation || 'Staff Member'} • {user?.department || 'Operations Dept.'}
+                                                </p>
+                                                <span style={{ background: '#ecfdf5', color: '#10b981', padding: '6px 16px', borderRadius: '20px', fontWeight: '700', fontSize: '13px', border: '1px solid #a7f3d0' }}>Active Employee</span>
+                                            </div>
+                                        </div>
+
+                                        <div style={{ marginTop: '40px', borderTop: '1px solid #e2e8f0', paddingTop: '30px' }}>
+                                            <h3 style={{ margin: '0 0 20px 0', color: '#0f172a', fontSize: '18px' }}>Personal & Job Details</h3>
+                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
+                                                
+                                                <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '12px', border: '1px solid #f1f5f9' }}>
+                                                    <p style={{ margin: '0 0 5px 0', color: '#64748b', fontSize: '13px', fontWeight: '600' }}>Email Address</p>
+                                                    <p style={{ margin: 0, color: '#0f172a', fontSize: '15px', fontWeight: '700' }}>{user?.email}</p>
+                                                </div>
+                                                
+                                                <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '12px', border: '1px solid #f1f5f9' }}>
+                                                    <p style={{ margin: '0 0 5px 0', color: '#64748b', fontSize: '13px', fontWeight: '600' }}>System Role</p>
+                                                    <p style={{ margin: 0, color: '#0f172a', fontSize: '15px', fontWeight: '700' }}>{user?.role}</p>
+                                                </div>
+                                                
+                                                <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '12px', border: '1px solid #f1f5f9' }}>
+                                                    <p style={{ margin: '0 0 5px 0', color: '#64748b', fontSize: '13px', fontWeight: '600' }}>Employee ID</p>
+                                                    <p style={{ margin: 0, color: '#0f172a', fontSize: '15px', fontWeight: '700' }}>{user?._id?.substring(0,8).toUpperCase() || 'EMP-001'}</p>
+                                                </div>
+                                                
+                                                <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '12px', border: '1px solid #f1f5f9' }}>
+                                                    <p style={{ margin: '0 0 5px 0', color: '#64748b', fontSize: '13px', fontWeight: '600' }}>Joining Date</p>
+                                                    <p style={{ margin: 0, color: '#0f172a', fontSize: '15px', fontWeight: '700' }}>{user?.joiningDate ? new Date(user.joiningDate).toLocaleDateString() : '01 Jan 2026'}</p>
+                                                </div>
+                                                
+                                                <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '12px', border: '1px solid #f1f5f9' }}>
+                                                    <p style={{ margin: '0 0 5px 0', color: '#64748b', fontSize: '13px', fontWeight: '600' }}>Base Salary</p>
+                                                    <p style={{ margin: 0, color: '#0f172a', fontSize: '15px', fontWeight: '700' }}>{user?.basicSalary ? `Rs ${user.basicSalary}` : 'Confidential'}</p>
+                                                </div>
+                                                
+                                                <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '12px', border: '1px solid #f1f5f9' }}>
+                                                    <p style={{ margin: '0 0 5px 0', color: '#64748b', fontSize: '13px', fontWeight: '600' }}>Work Shift</p>
+                                                    <p style={{ margin: 0, color: '#0f172a', fontSize: '15px', fontWeight: '700' }}>08:00 AM - 05:00 PM</p>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             )}
