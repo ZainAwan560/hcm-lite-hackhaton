@@ -1,5 +1,6 @@
-import React, { useState, useContext, useEffect } from 'react';
-import axios from 'axios';
+/* eslint-disable react-hooks/set-state-in-effect */
+import { useState, useContext, useEffect } from 'react';
+import api from '../api';
 import { AuthContext } from '../context/AuthContext';
 
 const EmployeeDashboard = () => {
@@ -18,11 +19,6 @@ const EmployeeDashboard = () => {
     const [checkOutTime, setCheckOutTime] = useState('--:--');
     const [newLeave, setNewLeave] = useState({ type: 'Annual', startDate: '', endDate: '', reason: '' });
 
-    // Yahan API base URL ko apne hisab se update rakhein
-    const API_BASE_URL = 'https://hcm-lite-hackhaton.vercel.app'; 
-
-    useEffect(() => { fetchMyData(); }, []);
-
     const fetchMyData = async () => {
         setLoading(true);
         try {
@@ -30,9 +26,9 @@ const EmployeeDashboard = () => {
             const headers = { Authorization: `Bearer ${token}` };
 
             const [attRes, leavesRes, payrollsRes] = await Promise.allSettled([
-                axios.get(`${API_BASE_URL}/api/attendance/me`, { headers }),
-                axios.get(`${API_BASE_URL}/api/leaves/me`, { headers }),
-                axios.get(`${API_BASE_URL}/api/payroll/me`, { headers })
+                api.get('/attendance/me', { headers }),
+                api.get('/leaves/me', { headers }),
+                api.get('/payroll/me', { headers })
             ]);
 
             if (attRes.status === 'fulfilled') {
@@ -57,12 +53,14 @@ const EmployeeDashboard = () => {
                 const approvedSlips = (payrollsRes.value.data || []).filter(p => p.status === 'Approved & Locked');
                 setPayrolls(approvedSlips);
             }
-        } catch (err) {
+        } catch {
             setError("Live server se connect hone mein masla aa raha hai.");
         } finally {
             setLoading(false);
         }
     };
+
+    useEffect(() => { fetchMyData(); }, []);
 
     const showMsg = (msg, isError = false) => {
         if (isError) setError(msg);
@@ -73,7 +71,7 @@ const EmployeeDashboard = () => {
     const handleAttendance = async (action) => {
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.post(`${API_BASE_URL}/api/attendance/${action}`, {}, { headers: { Authorization: `Bearer ${token}` } });
+            const res = await api.post(`/attendance/${action}`, {}, { headers: { Authorization: `Bearer ${token}` } });
             showMsg(res.data.message);
             fetchMyData();
         } catch (err) {
@@ -85,11 +83,11 @@ const EmployeeDashboard = () => {
         e.preventDefault();
         try {
             const token = localStorage.getItem('token');
-            await axios.post(`${API_BASE_URL}/api/leaves/apply`, newLeave, { headers: { Authorization: `Bearer ${token}` } });
+            await api.post(`/leaves/apply`, newLeave, { headers: { Authorization: `Bearer ${token}` } });
             showMsg('Leave application HR ko bhej di gayi hai.');
             setNewLeave({ type: 'Annual', startDate: '', endDate: '', reason: '' });
             fetchMyData();
-        } catch (err) {
+        } catch {
             showMsg('Leave submit karne mein error aaya.', true);
         }
     };

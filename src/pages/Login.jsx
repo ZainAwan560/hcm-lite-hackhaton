@@ -1,6 +1,6 @@
-import React, { useState, useContext, useEffect } from 'react';
+import { useState, useContext } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api';
 import { AuthContext } from '../context/AuthContext';
 
 const Login = () => {
@@ -23,8 +23,6 @@ const Login = () => {
     
     const allRoles = ['Employee', 'HR', 'Admin'];
 
-    useEffect(() => { localStorage.clear(); }, []);
-
     const handleAuth = async (e) => {
         e.preventDefault();
         setError('');
@@ -32,10 +30,9 @@ const Login = () => {
         try {
             let response;
             if (isSignup) {
-                // Apna live backend link yahan lagayen agar localhost hai
-                response = await axios.post('https://hcm-lite-hackhaton.vercel.app/api/auth/register', { name, email, password, role: activeRole });
+                response = await api.post('/auth/register', { name, email, password, role: activeRole });
             } else {
-                response = await axios.post('https://hcm-lite-hackhaton.vercel.app/api/auth/login', { email, password });
+                response = await api.post('/auth/login', { email, password });
                 const userRoleFromDB = response.data.user.role;
                 if (userRoleFromDB !== activeRole) {
                     setError(`Access Denied! Portal mismatch. You belong to ${userRoleFromDB}.`);
@@ -43,16 +40,19 @@ const Login = () => {
                     return; 
                 }
             }
-
             const { token, user } = response.data;
-            login(user, token); 
-            localStorage.setItem('token', token);
+            login(user, token);
 
             if (user.role === 'Admin') navigate('/admin');
             else if (user.role === 'HR') navigate('/hr');
             else navigate('/employee');
         } catch (err) {
-            setError(err.response?.data?.message || (isSignup ? 'Registration failed.' : 'Invalid credentials.'));
+            setError(
+                err.response?.data?.message ||
+                (err.response
+                    ? `Server error (${err.response.status}). Please try again.`
+                    : 'Could not connect to the server. Check that the backend is running and VITE_API_URL is correct.')
+            );
             setLoading(false);
         }
     };

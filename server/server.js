@@ -1,23 +1,26 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const cors = require('cors');
 const dotenv = require('dotenv');
 
 dotenv.config();
 const app = express();
 
-// Vercel ke liye Advanced CORS Configuration
-app.use(cors({
-    origin: '*', // Abhi hackathon ke liye sab allow kar diya hai
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));
+// 🚀 BULLETPROOF VERCEL CORS MIDDLEWARE (100% Fix for 500/403 Errors)
+app.use((req, res, next) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
-// Vercel 403 Preflight block fix karne ke liye
-app.options('*', cors());
+    // Agar request sirf check (OPTIONS) karne aayi hai, toh fauran 200 OK bhej do
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
+    next();
+});
 
 app.use(express.json());
 
+// Routes
 const authRoutes = require('./routes/authRoutes');
 app.use('/api/auth', authRoutes);
 
@@ -39,13 +42,18 @@ app.use('/api/leaves', leaveRoutes);
 const payrollRoutes = require('./routes/payrollRoutes');
 app.use('/api/payroll', payrollRoutes);
 
-// MongoDB Connection
-mongoose.connect(process.env.MONGO_URI)
+// MongoDB Connection Error Handling
+const DB_URI = process.env.MONGO_URI;
+if (!DB_URI) {
+    console.error("CRITICAL ERROR: MONGO_URI is missing in Environment Variables!");
+}
+
+mongoose.connect(DB_URI || "mongodb://localhost:27017/fallback")
   .then(() => console.log('MongoDB Connected successfully!'))
   .catch((err) => console.log('MongoDB connection error:', err));
 
 app.get('/', (req, res) => {
-    res.send('HCM Lite Backend is running!');
+    res.send('HCM Lite Backend is running without CORS issues!');
 });
 
 const PORT = process.env.PORT || 5000;
@@ -53,5 +61,5 @@ app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
 
-// VERCEL SERVERLESS DEPLOYMENT KE LIYE YEH LINE SABSE ZAROORI HAI
+// Vercel Serverless Export
 module.exports = app;
