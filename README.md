@@ -8,8 +8,9 @@
 
 The frontend sends API requests to `/api` by default; Vite proxies those requests
 to the local backend. For a separately hosted frontend, set `VITE_API_URL` to
-the backend API base URL, including `/api` (for example,
-`https://your-backend.example.com/api`), and allow the frontend origin in the
+the backend origin or API base URL (for example,
+`https://your-backend.example.com` or `https://your-backend.example.com/api`).
+The frontend adds the `/api` prefix when needed. Allow the frontend origin in the
 backend CORS configuration.
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.

@@ -49,7 +49,9 @@ const Login = () => {
         } catch (err) {
             setError(
                 err.response?.data?.message ||
-                (err.response
+                (err.response?.status === 404
+                    ? 'Login/signup API not found. Check that VITE_API_URL points to the backend server.'
+                    : err.response
                     ? `Server error (${err.response.status}). Please try again.`
                     : 'Could not connect to the server. Check that the backend is running and VITE_API_URL is correct.')
             );
