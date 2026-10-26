@@ -28,9 +28,9 @@ const AdminDashboard = () => {
             const headers = { Authorization: `Bearer ${token}` };
 
             const [usersRes, attRes, payrollsRes] = await Promise.allSettled([
-                axios.get('http://localhost:5000/api/auth/users', { headers }),
-                axios.get('http://localhost:5000/api/attendance/all', { headers }),
-                axios.get('http://localhost:5000/api/payroll/all', { headers })
+                axios.get('https://hcm-lite-hackhaton.vercel.app/api/auth/users', { headers }),
+                axios.get('https://hcm-lite-hackhaton.vercel.app/api/attendance/all', { headers }),
+                axios.get('https://hcm-lite-hackhaton.vercel.app/api/payroll/all', { headers })
             ]);
 
             let fetchedUsers = [];
@@ -77,7 +77,7 @@ const AdminDashboard = () => {
         e.preventDefault();
         try {
             const token = localStorage.getItem('token');
-            await axios.post('http://localhost:5000/api/auth/register', { ...newHR, role: 'HR' }, { headers: { Authorization: `Bearer ${token}` } });
+            await axios.post('https://hcm-lite-hackhaton.vercel.app/api/auth/register', { ...newHR, role: 'HR' }, { headers: { Authorization: `Bearer ${token}` } });
             showMsg('HR Manager Account Created Successfully!');
             setShowAddHR(false);
             setNewHR({ name: '', email: '', password: '' });
@@ -91,7 +91,7 @@ const AdminDashboard = () => {
         try {
             const token = localStorage.getItem('token');
             const newStatus = currentStatus === 'Active' ? 'Suspended' : 'Active';
-            await axios.put(`http://localhost:5000/api/auth/users/${userId}/status`, { status: newStatus }, { headers: { Authorization: `Bearer ${token}` } });
+            await axios.put(`https://hcm-lite-hackhaton.vercel.app/api/auth/users/${userId}/status`, { status: newStatus }, { headers: { Authorization: `Bearer ${token}` } });
             showMsg(`User account has been ${newStatus}.`);
             fetchAllAdminData(); 
         } catch (err) {
@@ -104,7 +104,7 @@ const AdminDashboard = () => {
         if (!window.confirm("Approve & Lock this payroll? Employee will now see this slip.")) return;
         try {
             const token = localStorage.getItem('token');
-            await axios.put(`http://localhost:5000/api/payroll/${id}/finalize`, { status: 'Approved & Locked' }, { headers: { Authorization: `Bearer ${token}` } });
+            await axios.put(`https://hcm-lite-hackhaton.vercel.app/api/payroll/${id}/finalize`, { status: 'Approved & Locked' }, { headers: { Authorization: `Bearer ${token}` } });
             showMsg('Payroll Approved & Locked successfully!');
             fetchAllAdminData();
         } catch (err) {
@@ -118,7 +118,7 @@ const AdminDashboard = () => {
         if (reason === null) return;
         try {
             const token = localStorage.getItem('token');
-            await axios.put(`http://localhost:5000/api/payroll/${id}/reject`, { status: 'Rejected', reason }, { headers: { Authorization: `Bearer ${token}` } });
+            await axios.put(`https://hcm-lite-hackhaton.vercel.app/api/payroll/${id}/reject`, { status: 'Rejected', reason }, { headers: { Authorization: `Bearer ${token}` } });
             showMsg('Payroll Rejected and sent back to HR.');
             fetchAllAdminData();
         } catch (err) {

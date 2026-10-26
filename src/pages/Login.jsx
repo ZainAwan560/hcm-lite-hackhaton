@@ -32,9 +32,9 @@ const Login = () => {
         try {
             let response;
             if (isSignup) {
-                response = await axios.post('http://localhost:5000/api/auth/register', { name, email, password, role: activeRole });
+                response = await axios.post('https://hcm-lite-hackhaton.vercel.app/api/auth/register', { name, email, password, role: activeRole });
             } else {
-                response = await axios.post('http://localhost:5000/api/auth/login', { email, password });
+                response = await axios.post('https://hcm-lite-hackhaton.vercel.app/api/auth/login', { email, password });
                 const userRoleFromDB = response.data.user.role;
                 if (userRoleFromDB !== activeRole) {
                     setError(`Access Denied! Portal mismatch. You belong to ${userRoleFromDB}.`);

@@ -29,9 +29,9 @@ const EmployeeDashboard = () => {
             const headers = { Authorization: `Bearer ${token}` };
 
             const [attRes, leavesRes, payrollsRes] = await Promise.allSettled([
-                axios.get('http://localhost:5000/api/attendance/me', { headers }),
-                axios.get('http://localhost:5000/api/leaves/me', { headers }),
-                axios.get('http://localhost:5000/api/payroll/me', { headers })
+                axios.get('https://hcm-lite-hackhaton.vercel.app/api/attendance/me', { headers }),
+                axios.get('https://hcm-lite-hackhaton.vercel.app/api/leaves/me', { headers }),
+                axios.get('https://hcm-lite-hackhaton.vercel.app/api/payroll/me', { headers })
             ]);
 
             if (attRes.status === 'fulfilled') {
@@ -77,7 +77,7 @@ const EmployeeDashboard = () => {
     const handleAttendance = async (action) => {
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.post(`http://localhost:5000/api/attendance/${action}`, {}, { headers: { Authorization: `Bearer ${token}` } });
+            const res = await axios.post(`https://hcm-lite-hackhaton.vercel.app/api/attendance/${action}`, {}, { headers: { Authorization: `Bearer ${token}` } });
             showMsg(res.data.message);
             fetchMyData(); // Live refresh
         } catch (err) {
@@ -89,7 +89,7 @@ const EmployeeDashboard = () => {
         e.preventDefault();
         try {
             const token = localStorage.getItem('token');
-            await axios.post('http://localhost:5000/api/leaves/apply', newLeave, { headers: { Authorization: `Bearer ${token}` } });
+            await axios.post('https://hcm-lite-hackhaton.vercel.app/api/leaves/apply', newLeave, { headers: { Authorization: `Bearer ${token}` } });
             showMsg('Leave application HR ko bhej di gayi hai.');
             setNewLeave({ type: 'Annual', startDate: '', endDate: '', reason: '' });
             fetchMyData();
