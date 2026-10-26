@@ -50,10 +50,10 @@ const Login = () => {
             setError(
                 err.response?.data?.message ||
                 (err.response?.status === 404
-                    ? 'Login/signup API not found. Check that VITE_API_URL points to the backend server.'
+                    ? 'Login/signup API not found. Check that the backend deployment is available.'
                     : err.response
                     ? `Server error (${err.response.status}). Please try again.`
-                    : 'Could not connect to the server. Check that the backend is running and VITE_API_URL is correct.')
+                    : 'Could not connect to the server. Check that the backend deployment is available.')
             );
             setLoading(false);
         }

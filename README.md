@@ -6,12 +6,9 @@
 2. Start the API from the `server` folder with `npm run dev` (port `5000`).
 3. Start the frontend from the project root with `npm run dev`.
 
-The frontend sends API requests to `/api` by default; Vite proxies those requests
-to the local backend. For a separately hosted frontend, set `VITE_API_URL` to
-the backend origin or API base URL (for example,
-`https://your-backend.example.com` or `https://your-backend.example.com/api`).
-The frontend adds the `/api` prefix when needed. Allow the frontend origin in the
-backend CORS configuration.
+The frontend sends API requests to
+`https://hcm-lite-hackhaton.vercel.app/api`, including when running the frontend
+locally. Ensure the deployment allows requests from the frontend origin.
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
