@@ -2,13 +2,12 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { protect, authorize } = require('../middleware/authMiddleware');
-const User = require('../models/User'); // User model import kar liya
+const User = require('../models/User'); 
 const router = express.Router();
 
 // First-run Setup: Admin Account banana
 router.post('/setup', async (req, res) => {
     try {
-        // Check karte hain ke kya pehle se koi Admin majood hai
         const adminExists = await User.findOne({ role: 'Admin' });
         if (adminExists) {
             return res.status(400).json({ message: "Admin account pehle se majood hai!" });
@@ -16,11 +15,9 @@ router.post('/setup', async (req, res) => {
 
         const { name, email, password } = req.body;
 
-        // Password ko encrypt (hash) karna zaroori hai
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        // Naya Admin create karna
         const admin = new User({
             name,
             email,
@@ -37,16 +34,8 @@ router.post('/setup', async (req, res) => {
     }
 });
 
-const requireAdminForPrivilegedRegistration = (req, res, next) => {
-    if (req.body.role === 'Employee') {
-        return next();
-    }
-
-    protect(req, res, () => authorize('Admin')(req, res, next));
-};
-
-// Employee self-registration is open; only admins can create HR or Admin accounts.
-router.post('/register', requireAdminForPrivilegedRegistration, async (req, res) => {
+// Employee, HR, aur Admin self-registration is open for hackathon
+router.post('/register', async (req, res) => {
     try {
         const { name, email, password, role } = req.body;
 
@@ -54,34 +43,29 @@ router.post('/register', requireAdminForPrivilegedRegistration, async (req, res)
             return res.status(400).json({ message: 'Invalid account role.' });
         }
 
-        // 1. Check karo ke user is email se pehle se toh nahi bana hua
         let user = await User.findOne({ email });
         if (user) {
             return res.status(400).json({ message: "Yeh email pehle se registered hai!" });
         }
 
-        // 2. Password ko encrypt (hash) karo
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        // 3. Naya user create karo (Admin, HR, ya Employee)
         user = new User({
             name,
             email,
             password: hashedPassword,
-            role // Frontend se aayega (Admin, HR, ya Employee)
+            role 
         });
 
         await user.save();
 
-        // 4. JWT Token banao taake signup ke foran baad auto-login ho jaye
         const token = jwt.sign(
             { userId: user._id, role: user.role },
             process.env.JWT_SECRET,
             { expiresIn: '1d' } 
         );
 
-        // 5. Token aur user ka data frontend ko wapas bhejo
         res.status(201).json({
             message: "Account successfully create ho gaya!",
             token,
@@ -104,7 +88,6 @@ router.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        // 1. Check karo ke user is email se exist karta hai ya nahi
         const user = await User.findOne({ email });
         if (!user) {
             return res.status(400).json({ message: "Galat email ya password" });
@@ -114,20 +97,17 @@ router.post('/login', async (req, res) => {
             return res.status(403).json({ message: 'This account has been suspended. Contact an administrator.' });
         }
 
-        // 2. Password match karo
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
             return res.status(400).json({ message: "Galat email ya password" });
         }
 
-        // 3. JWT Token banao (is mein user ki ID aur Role chhupa hoga)
         const token = jwt.sign(
             { userId: user._id, role: user.role },
             process.env.JWT_SECRET,
-            { expiresIn: '1d' } // Token 1 din tak chalega
+            { expiresIn: '1d' } 
         );
 
-        // 4. Token aur user ka data wapas bhejo
         res.json({
             message: "Login successful!",
             token,
@@ -145,10 +125,11 @@ router.post('/login', async (req, res) => {
     }
 });
 
-// Test Protected Route (Sirf Admin ke liye)
+// Test Protected Route
 router.post('/admin-dashboard', protect, authorize('Admin'), (req, res) => {
     res.json({ message: "Welcome Admin! Yeh secure data hai." });
 });
+
 // GET ALL USERS (For Admin Dashboard)
 router.get('/users', protect, authorize('Admin', 'HR'), async (req, res) => {
     try {
@@ -160,6 +141,7 @@ router.get('/users', protect, authorize('Admin', 'HR'), async (req, res) => {
     }
 });
 
+// Update User Status
 router.put('/users/:id/status', protect, authorize('Admin'), async (req, res) => {
     try {
         const { status } = req.body;
