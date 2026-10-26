@@ -115,7 +115,9 @@ const EmployeeDashboard = () => {
                     .grid-container { display: grid; gap: 20px; }
                     .grid-2 { grid-template-columns: 1fr 1fr; }
                     .grid-4 { grid-template-columns: repeat(4, 1fr); }
-                    .mobile-top-bar { display: none; }
+                    
+                    /* YAHAN FIX KIYA HAI: mobile-dropdown ko bhi hide kiya */
+                    .mobile-top-bar, .mobile-dropdown { display: none; }
                     
                     @media (max-width: 992px) { .grid-4 { grid-template-columns: repeat(2, 1fr); } .grid-2 { grid-template-columns: 1fr; } }
                     @media (max-width: 768px) {
@@ -314,7 +316,8 @@ const EmployeeDashboard = () => {
                                     <div>
                                         {leaveRequests.map((req, i) => (
                                             <div key={i} style={{ background: 'white', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '15px' }}>
-                                                <strong>{req.leaveType} Leave</strong> - <span style={{ color: req.status === 'Approved' ? '#166534' : '#d97706', fontWeight: '700' }}>{req.status}</span>
+                                                <strong>{req.leaveType} Leave</strong>
+                                                <span style={{ color: req.status === 'Approved' ? '#166534' : '#d97706', fontWeight: '700' }}> {req.status}</span>
                                                 <p style={{ margin: '10px 0 0 0', fontSize: '13px' }}>{new Date(req.startDate).toLocaleDateString()} to {new Date(req.endDate).toLocaleDateString()}</p>
                                             </div>
                                         ))}
