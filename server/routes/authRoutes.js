@@ -37,25 +37,26 @@ router.post('/setup', async (req, res) => {
 // Employee, HR, aur Admin self-registration is open for hackathon
 router.post('/register', async (req, res) => {
     try {
+        // Frontend se aane wale role ko receive kar rahe hain
         const { name, email, password, role } = req.body;
 
-        if (!['Admin', 'HR', 'Employee'].includes(role)) {
+        // Agar role nahi diya toh default 'Employee' banega, warna frontend wala role use hoga
+        const accountRole = role || 'Employee'; 
+        
+        // Hackathon ke liye hum teeno roles ko allow kar rahe hain
+        if (!['Admin', 'HR', 'Employee'].includes(accountRole)) {
             return res.status(400).json({ message: 'Invalid account role.' });
-        }
-
-        let user = await User.findOne({ email });
-        if (user) {
-            return res.status(400).json({ message: "Yeh email pehle se registered hai!" });
         }
 
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        user = new User({
+        // User ko uske selected role ke sath save karo
+        const user = new User({
             name,
             email,
             password: hashedPassword,
-            role 
+            role: accountRole 
         });
 
         await user.save();
@@ -69,15 +70,14 @@ router.post('/register', async (req, res) => {
         res.status(201).json({
             message: "Account successfully create ho gaya!",
             token,
-            user: {
-                id: user._id,
-                name: user.name,
-                email: user.email,
-                role: user.role
-            }
+            user: { id: user._id, name: user.name, email: user.email, role: user.role }
         });
 
     } catch (error) {
+        // Duplicate email par ab 500 crash nahi aayega balki 409 Conflict aayega
+        if (error.code === 11000) {
+            return res.status(409).json({ message: "Yeh email pehle se registered hai!" });
+        }
         console.error(error);
         res.status(500).json({ message: "Registration mein server error aa gaya" });
     }
