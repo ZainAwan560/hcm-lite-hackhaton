@@ -6,9 +6,16 @@
 2. Start the API from the `server` folder with `npm run dev` (port `5000`).
 3. Start the frontend from the project root with `npm run dev`.
 
-The frontend sends API requests to
-`https://hcm-lite-hackhaton.vercel.app/api`, including when running the frontend
-locally. Ensure the deployment allows requests from the frontend origin.
+The frontend sends API requests to the backend deployment at
+`https://hcm-lite-hackhaton-67t81jmh6-zainawan560s-projects.vercel.app/api`
+by default. Set `VITE_API_BASE_URL` to another backend URL (including `/api`)
+when running or deploying against a different API.
+
+The API deployment must be publicly reachable and allow requests from the
+frontend origin. If Vercel Deployment Protection is enabled for the API, disable
+it for the API deployment or use a public production deployment URL. Do not put
+a Vercel bypass secret in a `VITE_*` variable; frontend variables are exposed to
+the browser.
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
