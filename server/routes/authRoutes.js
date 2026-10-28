@@ -14,7 +14,6 @@ router.post('/setup', async (req, res) => {
         }
 
         const { name, email, password } = req.body;
-
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -27,23 +26,20 @@ router.post('/setup', async (req, res) => {
 
         await admin.save();
         res.status(201).json({ message: "Admin account successfully ban gaya!" });
-
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Server error aa gaya" });
     }
 });
 
-// Employee, HR, aur Admin self-registration is open for hackathon
+// Hackathon: Employee, HR, aur Admin self-registration is OPEN
 router.post('/register', async (req, res) => {
     try {
-        // Frontend se aane wale role ko receive kar rahe hain
         const { name, email, password, role } = req.body;
 
-        // Agar role nahi diya toh default 'Employee' banega, warna frontend wala role use hoga
+        // Default 'Employee', warna frontend ka bheja hua role
         const accountRole = role || 'Employee'; 
         
-        // Hackathon ke liye hum teeno roles ko allow kar rahe hain
         if (!['Admin', 'HR', 'Employee'].includes(accountRole)) {
             return res.status(400).json({ message: 'Invalid account role.' });
         }
@@ -51,7 +47,6 @@ router.post('/register', async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        // User ko uske selected role ke sath save karo
         const user = new User({
             name,
             email,
@@ -74,7 +69,7 @@ router.post('/register', async (req, res) => {
         });
 
     } catch (error) {
-        // Duplicate email par ab 500 crash nahi aayega balki 409 Conflict aayega
+        // Fix: Duplicate email par ab crash nahi aayega (409 Conflict)
         if (error.code === 11000) {
             return res.status(409).json({ message: "Yeh email pehle se registered hai!" });
         }

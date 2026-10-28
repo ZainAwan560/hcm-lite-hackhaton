@@ -6,7 +6,7 @@ const cors = require('cors');
 dotenv.config();
 const app = express();
 
-// 1. Standard CORS (Vercel ke preflight ko automatically pass karega)
+// 1. Standard CORS (Vercel ke firewall aur frontend communication ke liye)
 app.use(cors({
     origin: '*', 
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
@@ -15,12 +15,12 @@ app.use(cors({
 
 app.use(express.json());
 
-// 2. Vercel Serverless Database Connection Caching (500 Error Fix)
+// 2. Vercel Serverless Database Caching (500 Error Fix)
 let cachedDb = null;
 async function connectToDatabase() {
     if (cachedDb) return cachedDb;
     const DB_URI = process.env.MONGO_URI;
-    if (!DB_URI) throw new Error("CRITICAL ERROR: MONGO_URI is missing!");
+    if (!DB_URI) throw new Error("CRITICAL ERROR: MONGO_URI is missing in Environment Variables!");
     
     const db = await mongoose.connect(DB_URI);
     cachedDb = db;
@@ -28,7 +28,7 @@ async function connectToDatabase() {
     return db;
 }
 
-// 3. Global DB Middleware - Har route se pehle connection ensure karega
+// 3. Global DB Middleware - Har request se pehle connection ensure karega
 app.use(async (req, res, next) => {
     try {
         await connectToDatabase();
@@ -52,7 +52,7 @@ app.get('/', (req, res) => {
     res.send('HCM Lite Backend is running completely stable!');
 });
 
-// 4. Prevent App Listen on Vercel (Avoids hanging/port clashes)
+// 4. Prevent App Listen on Vercel (Port hanging issue fix)
 if (process.env.NODE_ENV !== 'production') {
     const PORT = process.env.PORT || 5000;
     app.listen(PORT, () => {
