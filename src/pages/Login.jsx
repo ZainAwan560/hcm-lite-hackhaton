@@ -1,134 +1,286 @@
 import { useState, useContext } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import api from '../api';
 import { AuthContext } from '../context/AuthContext';
+import { Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react';
 
 const Login = () => {
-    const location = useLocation();
-    const queryParams = new URLSearchParams(location.search);
-    const roleFromUrl = queryParams.get('role') || 'Employee';
+    const [isSignup, setIsSignup] = useState(false);
 
-    const [activeRole, setActiveRole] = useState(roleFromUrl);
-    const [isSignup, setIsSignup] = useState(false); // Toggle for Sign In / Sign Up
-    
     const [name, setName] = useState('');
+    const [companyName, setCompanyName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-    
+
     const { login } = useContext(AuthContext);
     const navigate = useNavigate();
-    
-    const allRoles = ['Employee', 'HR', 'Admin'];
 
-    const handleAuth = async (e) => {
+    const resetForm = () => {
+        setName(''); setCompanyName(''); setEmail('');
+        setPassword(''); setError(''); setShowPassword(false);
+    };
+
+    const toggle = (toSignup) => {
+        resetForm();
+        setIsSignup(toSignup);
+    };
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
         setLoading(true);
+
         try {
             let response;
+
             if (isSignup) {
-                response = await api.post('/auth/register', { name, email, password, role: activeRole });
+                response = await api.post('/auth/setup', {
+                    companyName: companyName.trim(),
+                    name: name.trim(),
+                    email: email.trim().toLowerCase(),
+                    password
+                });
             } else {
-                response = await api.post('/auth/login', { email, password });
-                const userRoleFromDB = response.data.user.role;
-                if (userRoleFromDB !== activeRole) {
-                    setError(`Access Denied! Portal mismatch. You belong to ${userRoleFromDB}.`);
-                    setLoading(false);
-                    return; 
-                }
+                response = await api.post('/auth/login', {
+                    email: email.trim().toLowerCase(),
+                    password
+                });
             }
+
             const { token, user } = response.data;
             login(user, token);
 
             if (user.role === 'Admin') navigate('/admin');
             else if (user.role === 'HR') navigate('/hr');
             else navigate('/employee');
+
         } catch (err) {
-            setError(
-                err.response?.data?.message ||
-                (err.response?.status === 404
-                    ? 'Login/signup API not found. Check that the backend deployment is available.'
-                    : err.response
-                    ? `Server error (${err.response.status}). Please try again.`
-                    : 'Could not connect to the server. Check that the backend deployment is available.')
-            );
+            const msg = err.response?.data?.message;
+            if (msg) {
+                setError(msg);
+            } else if (!err.response) {
+                setError('Unable to reach server. Check your connection.');
+            } else {
+                setError(`Error (${err.response.status}). Please try again.`);
+            }
             setLoading(false);
         }
     };
 
     return (
-        <div className="login-container" style={{ display: 'flex', minHeight: '100vh', fontFamily: "'Inter', sans-serif" }}>
-            <style>
-                {`
-                    @media (max-width: 900px) {
-                        .login-container { flex-direction: column !important; }
-                        .branding-panel { padding: 40px 20px !important; min-height: 250px !important; flex: none !important; }
-                        .branding-title { fontSize: 32px !important; }
-                        .form-panel { padding: 30px 20px !important; }
-                    }
-                `}
-            </style>
-            
-            <div className="branding-panel" style={{ flex: 1.2, backgroundColor: '#0f172a', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '60px', position: 'relative', overflow: 'hidden', color: 'white' }}>
-                <div style={{ position: 'absolute', top: '-10%', left: '-10%', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(37,99,235,0.15) 0%, rgba(15,23,42,0) 70%)', borderRadius: '50%' }}></div>
-                <div style={{ position: 'relative', zIndex: 2 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '30px' }}>
-                        <div style={{ width: '45px', height: '45px', background: '#3b82f6', borderRadius: '10px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                            <span style={{fontWeight: '900', fontSize: '20px'}}>HL</span>
-                        </div>
-                        <h1 style={{ fontSize: '28px', fontWeight: '800', margin: 0 }}>HCM Lite</h1>
-                    </div>
-                    <h2 className="branding-title" style={{ fontSize: '42px', fontWeight: '700', margin: '0 0 20px 0', lineHeight: '1.2' }}>
-                        Simplifying People,<br /> <span style={{ color: '#38bdf8' }}>Powering Performance.</span>
-                    </h2>
-                </div>
-            </div>
+        <div style={{
+            minHeight: '100vh',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: '#f1f5f9',
+            padding: '24px 16px',
+            fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+        }}>
+            <style>{`
+                @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+                .auth-input {
+                    border: none !important; outline: none !important;
+                    padding: 0 10px !important; font-size: 14px !important;
+                    color: #0f172a !important; width: 100% !important;
+                    background: transparent !important; margin: 0 !important;
+                    font-family: inherit !important;
+                }
+                .auth-input::placeholder { color: #94a3b8; }
+                .input-wrap {
+                    display: flex; align-items: center; background: #fff;
+                    border: 1.5px solid #e2e8f0; border-radius: 8px;
+                    padding: 0 14px; height: 46px;
+                    transition: border-color 0.15s, box-shadow 0.15s;
+                }
+                .input-wrap:focus-within {
+                    border-color: #2563eb;
+                    box-shadow: 0 0 0 3px rgba(37,99,235,0.08);
+                }
+                .submit-btn {
+                    width: 100%; height: 46px; background: #1d4ed8; color: #fff;
+                    border: none; border-radius: 8px; font-size: 14px; font-weight: 600;
+                    cursor: pointer; display: flex; align-items: center; justify-content: center;
+                    gap: 8px; transition: background 0.15s; font-family: inherit;
+                }
+                .submit-btn:hover:not(:disabled) { background: #1e40af; }
+                .submit-btn:disabled { opacity: 0.65; cursor: not-allowed; }
+                .field-label {
+                    display: block; font-size: 13px; font-weight: 600;
+                    color: #334155; margin-bottom: 6px;
+                }
+                .toggle-link {
+                    background: none; border: none; color: #2563eb;
+                    font-weight: 700; cursor: pointer; font-size: 13px;
+                    padding: 0; font-family: inherit; text-decoration: underline;
+                    text-underline-offset: 2px;
+                }
+                .toggle-link:hover { color: #1d4ed8; }
+            `}</style>
 
-            <div className="form-panel" style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '40px', backgroundColor: '#ffffff' }}>
-                <div style={{ width: '100%', maxWidth: '400px' }}>
-                    <div style={{ marginBottom: '25px', display: 'inline-flex', padding: '6px 14px', background: '#eff6ff', color: '#2563eb', borderRadius: '20px', fontWeight: '700', fontSize: '12px' }}>
-                        {activeRole === 'Admin' ? '🛡️ ' : activeRole === 'HR' ? '👥 ' : '💼 '} {activeRole} Portal
-                    </div>
+            <div style={{
+                width: '100%',
+                maxWidth: '420px',
+                backgroundColor: '#ffffff',
+                borderRadius: '16px',
+                boxShadow: '0 4px 24px rgba(0,0,0,0.09), 0 1px 4px rgba(0,0,0,0.04)',
+                overflow: 'hidden'
+            }}>
 
-                    <h2 style={{ color: '#0f172a', fontSize: '28px', fontWeight: '800', margin: '0 0 8px 0' }}>
-                        {isSignup ? `Create ${activeRole} Account` : `Sign In as ${activeRole}`}
-                    </h2>
-                    <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '25px' }}>
-                        {isSignup ? 'Register your official credentials.' : 'Enter your work credentials to access the portal.'}
+                {/* ── Brand Header ── */}
+                <div style={{
+                    backgroundColor: '#0f172a',
+                    padding: '28px 32px 22px',
+                    textAlign: 'center'
+                }}>
+                    <img
+                        src="/favicon.svg.png"
+                        alt="HCM Lite"
+                        style={{ width: '72px', height: '72px', objectFit: 'contain', borderRadius: '10px' }}
+                    />
+                    <h1 style={{
+                        color: '#f8fafc', fontSize: '20px', fontWeight: '700',
+                        letterSpacing: '-0.02em', margin: '10px 0 2px'
+                    }}>
+                        HCM Lite
+                    </h1>
+                    <p style={{ color: '#94a3b8', fontSize: '12px', margin: 0 }}>
+                        Human Capital Management
                     </p>
-                    
-                    {error && <div style={{ background: '#fef2f2', color: '#dc2626', padding: '12px', borderRadius: '8px', marginBottom: '20px', fontSize: '13px', fontWeight: '600' }}>{error}</div>}
-                    
-                    <form onSubmit={handleAuth} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                        {isSignup && <input type="text" value={name} onChange={(e) => setName(e.target.value)} required placeholder="Full Name" style={{ width: '100%', padding: '14px', borderRadius: '8px', border: '1px solid #cbd5e1' }} />}
-                        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="Work Email" style={{ width: '100%', padding: '14px', borderRadius: '8px', border: '1px solid #cbd5e1' }} />
-                        <div style={{ position: 'relative' }}>
-                            <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} required placeholder="Password" style={{ width: '100%', padding: '14px', borderRadius: '8px', border: '1px solid #cbd5e1' }} />
-                            <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '15px', top: '15px', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}>{showPassword ? 'Hide' : 'Show'}</button>
+                </div>
+
+                {/* ── Form Body ── */}
+                <div style={{ padding: '26px 32px 30px' }}>
+
+                    {/* Heading */}
+                    <div style={{ marginBottom: '20px' }}>
+                        <h2 style={{
+                            fontSize: '18px', fontWeight: '700', color: '#0f172a',
+                            margin: '0 0 4px', letterSpacing: '-0.01em'
+                        }}>
+                            {isSignup ? 'Create Admin Account' : 'Sign In'}
+                        </h2>
+                        <p style={{ fontSize: '13px', color: '#64748b', margin: 0 }}>
+                            {isSignup
+                                ? 'Set up your company. You will add HR & employees after login.'
+                                : 'Enter your credentials to access your portal.'}
+                        </p>
+                    </div>
+
+                    {/* Error Banner */}
+                    {error && (
+                        <div style={{
+                            display: 'flex', alignItems: 'flex-start', gap: '9px',
+                            background: '#fef2f2', border: '1px solid #fecaca',
+                            borderRadius: '8px', padding: '11px 13px', marginBottom: '18px'
+                        }}>
+                            <AlertCircle size={16} color="#dc2626" style={{ marginTop: '2px', flexShrink: 0 }} />
+                            <span style={{ fontSize: '13px', color: '#991b1b', lineHeight: '1.4' }}>{error}</span>
                         </div>
-                        
-                        <button type="submit" disabled={loading} style={{ padding: '14px', background: '#2563eb', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', cursor: loading ? 'not-allowed' : 'pointer' }}>
-                            {loading ? 'Processing...' : (isSignup ? 'Create Account' : 'Sign In')}
+                    )}
+
+                    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+
+                        {/* Company Name — signup only */}
+                        {isSignup && (
+                            <div>
+                                <label className="field-label">Company Name</label>
+                                <div className="input-wrap">
+                                    <input className="auth-input" type="text" value={companyName}
+                                        onChange={e => setCompanyName(e.target.value)}
+                                        placeholder="e.g. Saylani Welfare Trust" required />
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Your Name — signup only */}
+                        {isSignup && (
+                            <div>
+                                <label className="field-label">Your Name</label>
+                                <div className="input-wrap">
+                                    <input className="auth-input" type="text" value={name}
+                                        onChange={e => setName(e.target.value)}
+                                        placeholder="Full name" required />
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Email */}
+                        <div>
+                            <label className="field-label">Email Address</label>
+                            <div className="input-wrap">
+                                <input className="auth-input" type="email" value={email}
+                                    onChange={e => setEmail(e.target.value)}
+                                    placeholder="you@company.com"
+                                    autoComplete="email" required />
+                            </div>
+                        </div>
+
+                        {/* Password */}
+                        <div>
+                            <label className="field-label">Password</label>
+                            <div className="input-wrap">
+                                <input className="auth-input"
+                                    type={showPassword ? 'text' : 'password'}
+                                    value={password}
+                                    onChange={e => setPassword(e.target.value)}
+                                    placeholder="••••••••"
+                                    autoComplete={isSignup ? 'new-password' : 'current-password'}
+                                    required />
+                                <button type="button" onClick={() => setShowPassword(v => !v)}
+                                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                    style={{
+                                        background: 'none', border: 'none', cursor: 'pointer',
+                                        padding: '4px', display: 'flex', alignItems: 'center',
+                                        color: '#94a3b8', flexShrink: 0
+                                    }}>
+                                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Submit Button */}
+                        <button type="submit" className="submit-btn" disabled={loading} style={{ marginTop: '2px' }}>
+                            {loading ? (
+                                <>
+                                    <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
+                                    <span>{isSignup ? 'Creating account...' : 'Signing in...'}</span>
+                                </>
+                            ) : (
+                                <span>{isSignup ? 'Create Admin Account' : 'Sign In'}</span>
+                            )}
                         </button>
                     </form>
 
-                    <div style={{ marginTop: '15px', textAlign: 'center', fontSize: '14px', color: '#64748b' }}>
-                        {isSignup ? "Already have an account? " : "Don't have an account? "}
-                        <button type="button" onClick={() => { setIsSignup(!isSignup); setError(''); }} style={{ background: 'none', border: 'none', color: '#2563eb', fontWeight: '700', cursor: 'pointer' }}>
-                            {isSignup ? 'Sign in instead' : 'Create an account'}
-                        </button>
+                    {/* ── Toggle Sign In / Sign Up ── */}
+                    <div style={{
+                        marginTop: '20px',
+                        paddingTop: '16px',
+                        borderTop: '1px solid #f1f5f9',
+                        textAlign: 'center',
+                        fontSize: '13px',
+                        color: '#64748b'
+                    }}>
+                        {isSignup ? (
+                            <>
+                                Already have an account?{' '}
+                                <button className="toggle-link" onClick={() => toggle(false)}>
+                                    Sign in here
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                First time?{' '}
+                                <button className="toggle-link" onClick={() => toggle(true)}>
+                                    Create Admin Account
+                                </button>
+                            </>
+                        )}
                     </div>
 
-                    <div style={{ display: 'flex', gap: '10px', marginTop: '30px' }}>
-                        {allRoles.filter(role => role !== activeRole).map(role => (
-                            <button key={role} type="button" onClick={() => { setActiveRole(role); setError(''); setIsSignup(false); }} style={{ flex: 1, padding: '10px', border: '1px solid #cbd5e1', borderRadius: '8px', background: 'transparent', cursor: 'pointer', fontSize: '12px', fontWeight: '600' }}>
-                                Switch to {role}
-                            </button>
-                        ))}
-                    </div>
                 </div>
             </div>
         </div>
